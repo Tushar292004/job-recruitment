@@ -1,7 +1,6 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { ModeToggle } from "@/components/mode-toggle"
 import Link from "next/link"
 import { ArrowRight, Briefcase, Users, Search, MessageSquare, BarChart } from "lucide-react"
 import { motion } from "framer-motion"
@@ -9,36 +8,7 @@ import { motion } from "framer-motion"
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-2 font-bold text-xl">
-            <Briefcase className="h-5 w-5 text-primary" />
-            <span>JobConnect</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <nav className="hidden md:flex gap-6">
-              <Link href="#features" className="text-muted-foreground hover:text-foreground transition-colors">
-                Features
-              </Link>
-              <Link href="#how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">
-                How it works
-              </Link>
-              <Link href="#testimonials" className="text-muted-foreground hover:text-foreground transition-colors">
-                Testimonials
-              </Link>
-            </nav>
-            <div className="flex items-center gap-2">
-              <ModeToggle />
-              <Link href="/login">
-                <Button variant="outline">Log in</Button>
-              </Link>
-              <Link href="/signup">
-                <Button>Sign up</Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
+      {/* Header is now in the global layout */}
       <main className="flex-1">
         <section className="container py-24 sm:py-32">
           <motion.div

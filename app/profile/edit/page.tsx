@@ -72,7 +72,7 @@ export default function EditProfilePage() {
         if (role === "jobseeker") {
           const { data: profileData, error } = await supabase
             .from("job_seeker_profiles")
-            .select("*")
+            .select(`*, companies (*)`)
             .eq("user_id", user.id)
             .single()
 
@@ -230,17 +230,38 @@ export default function EditProfilePage() {
     setIsSaving(true)
 
     try {
-      // Update company details
-      const { error: companyError } = await supabase
-        .from("companies")
-        .update({
-          name: companyName,
-          description: companyDescription,
-          website: companyWebsite,
-        })
-        .eq("id", profileData.companies.id)
 
-      if (companyError) throw companyError
+      // Update company details
+      let companyId = profileData.companies?.id;
+
+      // If company doesn't exist, create a new one
+      if (!companyId) {
+        const { data: newCompany, error: companyError } = await supabase
+          .from("companies")
+          .insert({
+            name: companyName,
+            description: companyDescription,
+            website: companyWebsite,
+          })
+          .select()
+          .single();
+
+        if (companyError) throw companyError;
+        companyId = newCompany.id;
+      } else {
+        // Update existing company
+        const { error: companyError } = await supabase
+          .from("companies")
+          .update({
+            name: companyName,
+            description: companyDescription,
+            website: companyWebsite,
+          })
+          .eq("id", companyId);
+
+        if (companyError) throw companyError;
+      }
+
 
       // Update recruiter details
       const { error: recruiterError } = await supabase
@@ -249,6 +270,7 @@ export default function EditProfilePage() {
           name: recruiterName,
           description: recruiterDescription,
           experience: recruiterExperience,
+          company_id: companyId,
         })
         .eq("id", profileData.id)
 

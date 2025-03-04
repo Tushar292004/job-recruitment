@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { useToast } from "@/components/ui/use-toast"
 import { Plus, Trash2 } from "lucide-react"
 import { motion } from "framer-motion"
@@ -122,26 +122,38 @@ export default function JobSeekerProfilePage() {
 
     try {
       // Create job seeker profile in Supabase
-      const { error } = await supabase.from("job_seeker_profiles").insert({
-        user_id: user.id,
-        name,
-        date_of_birth: dob,
-        university,
-        year_of_passing: yearOfPassing,
-        cgpa,
-        degree,
-        branch,
-        skills,
-        projects,
-        languages,
-        field_of_interest: fieldOfInterest,
-        work_experience: Number.parseInt(workExperience),
-        min_salary: Number.parseFloat(minSalary),
-        job_type: jobType,
-        current_status: currentStatus,
-      })
+      const { data: profileData, error } = await supabase
+        .from("job_seeker_profiles")
+        .insert({
+          user_id: user.id,
+          name,
+          date_of_birth: dob,
+          university,
+          year_of_passing: yearOfPassing,
+          cgpa,
+          degree,
+          branch,
+          skills,
+          projects,
+          languages,
+          field_of_interest: fieldOfInterest,
+          work_experience: Number.parseInt(workExperience),
+          min_salary: Number.parseFloat(minSalary),
+          job_type: jobType,
+          current_status: currentStatus,
+        })
+        .select()
+        .single()
 
       if (error) throw error
+
+      // Create welcome notification
+      await supabase.from("notifications").insert({
+        user_id: user.id,
+        message:
+          "Welcome to JobConnect! Your job seeker profile has been created successfully. Recruiters can now find you based on your skills and preferences.",
+        type: "welcome",
+      })
 
       toast({
         title: "Profile created",

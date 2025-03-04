@@ -9,11 +9,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Slider } from "@/components/ui/slider"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/components/ui/use-toast"
-import { Briefcase, Search, Filter, User, X, ArrowLeft } from "lucide-react"
+import { Search, Filter, User, X, ArrowLeft } from "lucide-react"
 import { motion } from "framer-motion"
 
 export default function SearchPage() {
@@ -57,7 +57,7 @@ export default function SearchPage() {
         const { data: userData } = await supabase.auth.getUser()
         const role = userData.user?.user_metadata?.role
 
-        if (role === "recruiter") {
+        if (role !== "recruiter") {
           toast({
             title: "Access denied",
             description: "Only recruiters can access the search page.",
@@ -211,17 +211,39 @@ ${recruiterProfile.name}`
     if (!selectedCandidate) return
 
     try {
-      const { error } = await supabase.from("invitations").insert({
-        recruiter_id: recruiterProfile.id,
-        job_seeker_id: selectedCandidate.id,
-        role: role,
-        skills: skills,
-        salary_range: `$${salaryRange[0].toLocaleString()} - $${salaryRange[1].toLocaleString()}`,
-        custom_message: customMessage,
-        status: "pending",
-      })
+      // Create the invitation
+      const { data: invitationData, error } = await supabase
+        .from("invitations")
+        .insert({
+          recruiter_id: recruiterProfile.id,
+          job_seeker_id: selectedCandidate.id,
+          role: role,
+          skills: skills,
+          salary_range: `$${salaryRange[0].toLocaleString()} - $${salaryRange[1].toLocaleString()}`,
+          custom_message: customMessage,
+          status: "pending",
+        })
+        .select()
+        .single()
 
       if (error) throw error
+
+      // Get job seeker user ID to send notification
+      const { data: jobSeekerData, error: jobSeekerError } = await supabase
+        .from("job_seeker_profiles")
+        .select("user_id")
+        .eq("id", selectedCandidate.id)
+        .single()
+
+      if (jobSeekerError) throw jobSeekerError
+
+      // Create notification for job seeker
+      await supabase.from("notifications").insert({
+        user_id: jobSeekerData.user_id,
+        message: `You received an invitation from ${recruiterProfile.name} at ${recruiterProfile.companies.name} for the role of ${role}.`,
+        type: "invitation",
+        related_id: invitationData.id,
+      })
 
       toast({
         title: "Invitation sent",
@@ -250,19 +272,7 @@ ${recruiterProfile.name}`
 
   return (
     <div className="min-h-screen bg-muted/30">
-      <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-2 font-bold text-xl">
-            <Briefcase className="h-5 w-5 text-primary" />
-            <span>JobConnect</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => router.push("/dashboard")}>
-              Dashboard
-            </Button>
-          </div>
-        </div>
-      </header>
+      {/* Header is now in the global layout */}
 
       <main className="container py-10">
         <div className="mb-8">

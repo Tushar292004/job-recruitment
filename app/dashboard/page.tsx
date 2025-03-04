@@ -80,8 +80,7 @@ export default function DashboardPage() {
           const pending = invitationsData?.filter((inv) => inv.status === "pending").length || 0
 
           setStats({ total, accepted, declined, pending })
-        } else{
-          // (role === "recruiter") 
+        } else if (role === "recruiter") {
           const { data: profileData, error } = await supabase
             .from("recruiter_profiles")
             .select(`
@@ -148,9 +147,33 @@ export default function DashboardPage() {
 
   const handleInvitationResponse = async (invitationId: string, status: "accepted" | "declined") => {
     try {
-      const { error } = await supabase.from("invitations").update({ status }).eq("id", invitationId)
+      // Update invitation status
+      const { data: invitationData, error } = await supabase
+        .from("invitations")
+        .update({ status })
+        .eq("id", invitationId)
+        .select(`
+          *,
+          recruiter:recruiter_profiles(
+            name,
+            user_id,
+            companies(name)
+          )
+        `)
+        .single()
 
       if (error) throw error
+
+      // Get the recruiter's user ID for notification
+      const recruiterId = invitationData.recruiter.user_id
+
+      // Create notification for recruiter
+      await supabase.from("notifications").insert({
+        user_id: recruiterId,
+        message: `${profileData.name} has ${status} your invitation for the role of ${invitationData.role}.`,
+        type: "invitation_response",
+        related_id: invitationId,
+      })
 
       // Update local state
       setInvitations(invitations.map((inv) => (inv.id === invitationId ? { ...inv, status } : inv)))
@@ -210,19 +233,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-muted/30">
-      <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-2 font-bold text-xl">
-            <Briefcase className="h-5 w-5 text-primary" />
-            <span>JobConnect</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={handleSignOut}>
-              Sign out
-            </Button>
-          </div>
-        </div>
-      </header>
+      {/* Header is now in the global layout */}
 
       <main className="container py-10">
         <div className="grid gap-8 md:grid-cols-3">
